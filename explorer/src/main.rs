@@ -3,36 +3,63 @@ mod f {
     use std::io;
     use std::path::Path;
 
-    fn visit_dirs_intern(dir: &Path, depth: u8, cb: &dyn Fn(&fs::DirEntry, u8)) -> io::Result<()> {
-        if dir.is_dir() {
-            for entry in fs::read_dir(dir)? {
-                let entry = entry?;
-                let path = entry.path();
-                if path.is_dir() {
-                    visit_dirs_intern(&path, depth + 1, cb)?;
-                }
-                cb(&entry, depth);
-            }
-        }
-        Ok(())
+    pub fn visit_dirs(dir: &str) -> io::Result<Vec<fs::DirEntry>> {
+        fs::read_dir(Path::new(dir))?.collect()
     }
 
-    fn print_file(entry: &fs::DirEntry, depth: u8) {
-        println!(
-            "{} {}",
-            (0..depth * 3).map(|_| '-').collect::<String>(),
-            entry
-                .file_name()
-                .into_string()
-                .unwrap_or("Not unwrapped".to_string())
-        );
-    }
+    pub fn print_file(entry: &fs::DirEntry) {
+        let file_name = entry
+            .file_name()
+            .into_string()
+            .unwrap_or("Not unwrapped".to_string());
 
-    pub fn visit_dirs(path: &str) {
-        let _ = visit_dirs_intern(Path::new(path), 0, &print_file);
+        let file_type = if entry.path().is_dir() {
+            "dir "
+        } else {
+            "file"
+        };
+        println!("{} | {}", file_type, file_name);
     }
 }
 
-fn main() {
-    let _ = f::visit_dirs(".");
+#[derive(Default)]
+struct Counter {
+    value: Vec<String>,
+}
+#[derive(Debug, Clone, Copy)]
+pub enum Message {
+    Load,
+    Hover,
+}
+use iced::widget::{button, column, row, text, Column, Row};
+use iced::Element;
+
+impl Counter {
+    pub fn view(&self) -> Column<Message> {
+        let rows: Vec<Element<Message>> = self.value.iter().map(|x| row![text(x)].into()).collect();
+        // We use a column: a simple vertical layout
+        column![
+            row![button("Load").on_press(Message::Load)],
+            column![Column::from_vec(rows)]
+        ]
+    }
+    pub fn update(&mut self, message: Message) {
+        match message {
+            Message::Load => {
+                self.value = f::visit_dirs(".")
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|x| x.file_name().to_str().unwrap_or("hoho").to_string())
+                    .collect();
+            }
+            Message::Hover => (),
+        }
+    }
+}
+
+fn main() -> iced::Result {
+    if let Ok(files) = f::visit_dirs(".") {
+        files.iter().for_each(f::print_file);
+    }
+    iced::run("A cool counter", Counter::update, Counter::view)
 }
