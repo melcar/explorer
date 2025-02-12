@@ -29,14 +29,15 @@ struct Counter {
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
     Load,
-    Hover,
+    Click,
 }
 use iced::widget::{button, column, row, text, Column, Row};
 use iced::Element;
 
 impl Counter {
     pub fn view(&self) -> Column<Message> {
-        let rows: Vec<Element<Message>> = self.value.iter().map(|x| row![text(x)].into()).collect();
+        let rows: Vec<Element<Message>> =
+            self.value.iter().map(|x| row![button((*x).as_str()).on_press(Message::Click)].into()).collect();
         // We use a column: a simple vertical layout
         column![
             row![button("Load").on_press(Message::Load)],
@@ -52,7 +53,7 @@ impl Counter {
                     .map(|x| x.file_name().to_str().unwrap_or("hoho").to_string())
                     .collect();
             }
-            Message::Hover => (),
+            Message::Click=> (),
         }
     }
 }
