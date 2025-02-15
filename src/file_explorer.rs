@@ -19,8 +19,8 @@ impl FileExplorer {
 
     pub fn update(&mut self, message: Message) {
         match message {
-            Message::Load => self.files_list.load(),
             Message::Click(s) => self.files_list.visit(&s),
+            Message::GoBack => self.files_list.go_back()
         }
     }
 }

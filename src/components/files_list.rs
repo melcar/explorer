@@ -1,19 +1,24 @@
 // UI state view and action taht represents the listing of files/Directories
 use crate::components::files_actions::{get_file_name, visit_dirs};
-use iced::widget::{button, column, row, text, Column};
+use iced::widget::{button, column, image, row, text, Column};
 use iced::Element;
+use std::env;
 use std::fs::{self};
+use std::path::PathBuf;
 
 use super::state::Message;
 
 pub struct FilesList {
     value: Vec<fs::DirEntry>,
+    current_directory: PathBuf,
 }
 
 impl Default for FilesList {
     fn default() -> Self {
+        let path = env::current_dir().expect("");
         FilesList {
-            value: visit_dirs(".").unwrap_or_default(),
+            value: visit_dirs(&path).unwrap_or_default(),
+            current_directory: path,
         }
     }
 }
@@ -34,14 +39,29 @@ impl FilesList {
             })
             .collect();
         column![
+            button(image("ressources/goUp.png"))
+                .on_press(Message::GoBack)
+                .width(75)
+                .height(75),
             column![Column::from_vec(rows)]
         ]
     }
-    pub fn load(&mut self) {
-        self.value = visit_dirs(".").unwrap_or_default();
+
+    pub fn refresh(&mut self) {
+        self.value = visit_dirs(&self.current_directory).unwrap_or_default();
     }
 
     pub fn visit(&mut self, directory: &str) {
-        self.value = visit_dirs(directory).unwrap_or_default();
+        self.current_directory.push(directory);
+        self.refresh()
+    }
+
+    pub fn go_back(&mut self) {
+        self.current_directory = self
+            .current_directory
+            .parent()
+            .unwrap_or(self.current_directory.as_path())
+            .to_path_buf();
+        self.refresh();
     }
 }

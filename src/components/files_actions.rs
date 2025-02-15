@@ -3,8 +3,9 @@
 use std::fs;
 use std::io;
 use std::path::Path;
+use std::path::PathBuf;
 
-pub fn visit_dirs(dir: &str) -> io::Result<Vec<fs::DirEntry>> {
+pub fn visit_dirs(dir: &PathBuf) -> io::Result<Vec<fs::DirEntry>> {
     fs::read_dir(Path::new(dir))?.collect()
 }
 
