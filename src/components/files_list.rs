@@ -2,13 +2,20 @@
 use crate::components::files_actions::{get_file_name, visit_dirs};
 use iced::widget::{button, column, row, text, Column};
 use iced::Element;
-use std::fs;
+use std::fs::{self};
 
 use super::state::Message;
 
-#[derive(Default)]
 pub struct FilesList {
     value: Vec<fs::DirEntry>,
+}
+
+impl Default for FilesList {
+    fn default() -> Self {
+        FilesList {
+            value: visit_dirs(".").unwrap_or_default(),
+        }
+    }
 }
 
 impl FilesList {
@@ -16,16 +23,17 @@ impl FilesList {
         let rows: Vec<Element<Message>> = self
             .value
             .iter()
-            .map(|x| {
-                row![button(text(get_file_name(x)))
-                    .on_press(Message::Click(x.path().to_string_lossy().to_string()))
-                    .width(300)]
+            .map(|x| -> Element<Message> {
+                match x.path().is_dir() {
+                    true => row![button(text("Directory: ".to_owned() + &get_file_name(x)))
+                        .on_press(Message::Click(x.path().to_string_lossy().to_string()))],
+                    false => row![text(get_file_name(x))],
+                }
+                .width(300)
                 .into()
             })
             .collect();
-        // We use a column: a simple vertical layout
         column![
-            row![button("Load").on_press(Message::Load)],
             column![Column::from_vec(rows)]
         ]
     }

@@ -13,8 +13,8 @@ pub struct FileExplorer {
 
 impl FileExplorer {
     pub fn view(&self) -> Element<Message> {
-        let view = self.files_list.view();
-        column![view].into()
+        let file_list = self.files_list.view();
+        column![file_list].into()
     }
 
     pub fn update(&mut self, message: Message) {
