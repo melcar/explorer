@@ -11,6 +11,8 @@ use super::state::Message;
 pub struct FilesList {
     value: Vec<fs::DirEntry>,
     current_directory: PathBuf,
+    name_column_width: u16,
+    file_size_column_width: u16,
 }
 
 impl Default for FilesList {
@@ -19,6 +21,8 @@ impl Default for FilesList {
         FilesList {
             value: visit_dirs(&path).unwrap_or_default(),
             current_directory: path,
+            name_column_width: 250,
+            file_size_column_width: 150,
         }
     }
 }
@@ -27,20 +31,20 @@ enum EntryType<'a> {
     Directory(&'a DirEntry),
     File(&'a DirEntry),
 }
-fn make_file_list_row(entry: &DirEntry) -> (EntryType, Element<Message>) {
+fn make_file_list_row(entry: &DirEntry, width: u16) -> (EntryType, Element<Message>) {
     match entry.path().is_dir() {
         true => (
             EntryType::Directory(entry),
-            text("").into(), // empty in row
+            text("").width(width).into(), // empty in row
         ),
         false => (
             EntryType::File(entry),
-            text(get_file_size(entry).to_string()).into(),
+            text(get_file_size(entry).to_string()).width(width).into(),
         ),
     }
 }
 
-fn make_button(e: &DirEntry) -> Element<'static, Message> {
+fn make_button(e: &DirEntry, width: u16) -> Element<'static, Message> {
     button(
         row![
             image("ressources/folder.png").width(30).height(20),
@@ -48,38 +52,36 @@ fn make_button(e: &DirEntry) -> Element<'static, Message> {
         ]
         .spacing(10),
     )
+    .width(300)
     .on_press(Message::Click(e.path().to_string_lossy().to_string()))
+    .width(width)
     .into()
 }
-fn make_text(e: &DirEntry) -> Element<'static, Message> {
-    text(get_file_name(e)).into()
+fn make_text(e: &DirEntry, width: u16) -> Element<'static, Message> {
+    text(get_file_name(e)).width(width).into()
 }
 
-fn make_name(e: EntryType) -> Element<'static, Message> {
+fn make_name(e: EntryType, width: u16) -> Element<'static, Message> {
     match e {
-        EntryType::Directory(name) => make_button(name),
-        EntryType::File(name) => make_text(name),
+        EntryType::Directory(name) => make_button(name, width),
+        EntryType::File(name) => make_text(name, width),
     }
 }
 
 impl FilesList {
     pub fn view(&self) -> Column<Message> {
-        let (file_name_column, file_size_colunm): (Vec<_>, Vec<_>) =
-            self.value.iter().map(make_file_list_row).unzip();
+        let files_rows: Vec<_> = self
+            .value
+            .iter()
+            .map(|x| make_file_list_row(x, self.file_size_column_width))
+            .map(|x| row![make_name(x.0, self.name_column_width), x.1].into())
+            .collect();
         column![
             button(image("ressources/goUp.png"))
                 .on_press(Message::GoBack)
                 .width(75)
                 .height(75),
-            scrollable(
-                row![
-                    column![Column::from_vec(
-                        file_name_column.into_iter().map(make_name).collect()
-                    )],
-                    column![Column::from_vec(file_size_colunm)]
-                ]
-                .width(1000)
-            )
+            scrollable(Column::from_vec(files_rows))
         ]
     }
 
