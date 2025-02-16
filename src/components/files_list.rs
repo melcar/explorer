@@ -1,6 +1,6 @@
 // UI state view and action taht represents the listing of files/Directories
 use crate::components::files_actions::{get_file_name, visit_dirs};
-use iced::widget::{button, column, image, row, text, Column};
+use iced::widget::{button, column, image, row, scrollable, text, Column};
 use iced::Element;
 use std::env;
 use std::fs::{self};
@@ -43,7 +43,7 @@ impl FilesList {
                 .on_press(Message::GoBack)
                 .width(75)
                 .height(75),
-            column![Column::from_vec(rows)]
+            scrollable(column![Column::from_vec(rows)])
         ]
     }
 
