@@ -30,7 +30,7 @@ impl FilesList {
             .iter()
             .map(|x| -> Element<Message> {
                 match x.path().is_dir() {
-                    true => row![button(text("Directory: ".to_owned() + &get_file_name(x)))
+                    true => row![button(row![image("ressources/folder.png").height(30).width(30), text(get_file_name(x))])
                         .on_press(Message::Click(x.path().to_string_lossy().to_string()))],
                     false => row![text(get_file_name(x))],
                 }
