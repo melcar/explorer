@@ -3,7 +3,7 @@ use crate::components::files_actions::{get_file_name, get_file_size, visit_dirs}
 use iced::widget::{button, column, image, row, scrollable, text, Column};
 use iced::Element;
 use std::env;
-use std::fs::{self};
+use std::fs::{self, DirEntry};
 use std::path::PathBuf;
 
 use super::state::Message;
@@ -23,34 +23,63 @@ impl Default for FilesList {
     }
 }
 
+enum EntryType<'a> {
+    Directory(&'a DirEntry),
+    File(&'a DirEntry),
+}
+fn make_file_list_row(entry: &DirEntry) -> (EntryType, Element<Message>) {
+    match entry.path().is_dir() {
+        true => (
+            EntryType::Directory(entry),
+            text("").into(), // empty in row
+        ),
+        false => (
+            EntryType::File(entry),
+            text(get_file_size(entry).to_string()).into(),
+        ),
+    }
+}
+
+fn make_button(e: &DirEntry) -> Element<'static, Message> {
+    button(
+        row![
+            image("ressources/folder.png").width(30).height(20),
+            text(get_file_name(e))
+        ]
+        .spacing(10),
+    )
+    .on_press(Message::Click(e.path().to_string_lossy().to_string()))
+    .into()
+}
+fn make_text(e: &DirEntry) -> Element<'static, Message> {
+    text(get_file_name(e)).into()
+}
+
+fn make_name(e: EntryType) -> Element<'static, Message> {
+    match e {
+        EntryType::Directory(name) => make_button(name),
+        EntryType::File(name) => make_text(name),
+    }
+}
+
 impl FilesList {
     pub fn view(&self) -> Column<Message> {
-        let rows: Vec<Element<Message>> =
-            self.value
-                .iter()
-                .map(|x| -> Element<Message> {
-                    match x.path().is_dir() {
-                        true => row![button(
-                            row![
-                                image("ressources/folder.png").height(30).width(30),
-                                text(get_file_name(x)),
-                            ]
-                            .spacing(10)
-                        )
-                        .on_press(Message::Click(x.path().to_string_lossy().to_string()))],
-                        false => row![text(get_file_name(x)), text(get_file_size(x).to_string())]
-                            .spacing(10),
-                    }
-                    .width(1000)
-                    .into()
-                })
-                .collect();
+        let (file_name_column, file_size_colunm): (Vec<_>, Vec<_>) =
+            self.value.iter().map(make_file_list_row).unzip();
         column![
             button(image("ressources/goUp.png"))
                 .on_press(Message::GoBack)
                 .width(75)
                 .height(75),
-            scrollable(column![Column::from_vec(rows)])
+            scrollable(
+                row![
+                    column![Column::from_vec(
+                        file_name_column.into_iter().map(make_name).collect()
+                    )],
+                    column![Column::from_vec(file_size_colunm)]
+                ]
+                .width(1000)
+            )
         ]
     }
 
