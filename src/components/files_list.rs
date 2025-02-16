@@ -1,5 +1,5 @@
 // UI state view and action taht represents the listing of files/Directories
-use crate::components::files_actions::{get_file_name, visit_dirs};
+use crate::components::files_actions::{get_file_name, get_file_size, visit_dirs};
 use iced::widget::{button, column, image, row, scrollable, text, Column};
 use iced::Element;
 use std::env;
@@ -25,19 +25,26 @@ impl Default for FilesList {
 
 impl FilesList {
     pub fn view(&self) -> Column<Message> {
-        let rows: Vec<Element<Message>> = self
-            .value
-            .iter()
-            .map(|x| -> Element<Message> {
-                match x.path().is_dir() {
-                    true => row![button(row![image("ressources/folder.png").height(30).width(30), text(get_file_name(x))])
+        let rows: Vec<Element<Message>> =
+            self.value
+                .iter()
+                .map(|x| -> Element<Message> {
+                    match x.path().is_dir() {
+                        true => row![button(
+                            row![
+                                image("ressources/folder.png").height(30).width(30),
+                                text(get_file_name(x)),
+                            ]
+                            .spacing(10)
+                        )
                         .on_press(Message::Click(x.path().to_string_lossy().to_string()))],
-                    false => row![text(get_file_name(x))],
-                }
-                .width(300)
-                .into()
-            })
-            .collect();
+                        false => row![text(get_file_name(x)), text(get_file_size(x).to_string())]
+                            .spacing(10),
+                    }
+                    .width(1000)
+                    .into()
+                })
+                .collect();
         column![
             button(image("ressources/goUp.png"))
                 .on_press(Message::GoBack)
